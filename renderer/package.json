@@ -1,0 +1,19 @@
+{
+    "name": "msl-project",
+    "version": "1.0.0",
+    "description": "Minecraft Server Launcher",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    },
+    "keywords": [
+        "Server",
+        "Launcher",
+        "Minecraft"
+    ],
+    "author": "Danny",
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^13.2.2"
+    }
+}
