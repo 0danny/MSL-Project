@@ -2,7 +2,7 @@
     "name": "msl-project",
     "version": "1.0.0",
     "description": "Minecraft Server Launcher",
-    "main": "main.js",
+    "main": "./renderer/main.js",
     "scripts": {
         "start": "electron ."
     },
@@ -15,5 +15,9 @@
     "license": "ISC",
     "devDependencies": {
         "electron": "^13.2.2"
+    },
+    "dependencies": {
+        "@types/jquery": "^3.5.6",
+        "jquery": "^3.6.0"
     }
 }
