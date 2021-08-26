@@ -21,32 +21,71 @@
 
 <body>
 
-
     <div class="container-fluid">
         <div class="text-center display-1 pb-4">MSL Project</div>
+
         <div class="card">
-            <div class="card-header">Data</div>
-            <div class="card-body">
-                <div class="alert alert-info" role="alert">
-                    Below is the information that is being redirected from stdout.
+            <ul class="card-header rounded nav nav-pills">
+                <li class="nav-item">
+                    <button class="nav-link active" id="pills-main-tab" data-bs-toggle="pill" data-bs-target="#pills-main" type="button" role="tab" aria-controls="pills-main" aria-selected="true">Main</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="pills-config-tab" data-bs-toggle="pill" data-bs-target="#pills-config" type="button" role="tab" aria-controls="pills-config" aria-selected="true">Configuration</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="pills-main" role="tabpanel" aria-labelledby="pills-main-tab">
+                    <div class="card-body">
+                        <div class="alert alert-info" role="alert">
+                            Below is the information that is being redirected from stdout.
+                        </div>
+                        <button class="w-100 btn btn-info mb-3" type="button" id="saveButton">Save World</button>
+                        <button class="w-100 btn btn-info mb-3" type="button" id="startServerButton">Start Server</button>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="ram-addon">RAM (GB)</span>
+                            <input type="text" class="form-control" id="ram-inputBox" aria-describedby="ram-addon" value="2">
+                            <span class="input-group-text" id="permSize-addon">Perm (MB)</span>
+                            <input type="text" class="form-control" id="permSize-inputBox" aria-describedby="permSize-addon" value="128">
+                        </div>
+                        <h5 class="card-title">Minecraft Server Output</h5>
+
+                        <ul class="bg-light rounded overflow-auto border border-info p-1 list-group" id="outputBox">
+                            <li class="list-group-item">Electron loaded.</li>
+                        </ul>
+
+                        <div class="input-group pt-3">
+                            <input type="text" class="form-control" placeholder="Message for server..." aria-label="Message for server..." id="messageInput">
+                            <button class="btn btn-primary" type="button" id="sendMessageButton">Send Message</button>
+                        </div>
+                    </div>
                 </div>
-                <h5 class="card-title">Minecraft Server Output</h5>
+                <div class="tab-pane fade" id="pills-config" role="tabpanel" aria-labelledby="pills-config-tab">
+                    <div class="card-body">
+                        <div class="card-header rounded border border-info">Server Configuration</div>
+                        <ul class="bg-light rounded overflow-auto p-1 list-group" id="serverConfigBox">
 
-                <ul class="bg-light rounded overflow-auto border border-info p-1 list-group" id="outputBox">
-                    <li class="list-group-item">Electron loaded.</li>
-                </ul>
-
-                <div class="input-group pt-3">
-                    <input type="text" class="form-control" placeholder="Message for server..." aria-label="Message for server..." id="messageInput">
-                    <button class="btn btn-primary" type="button" id="sendMessageButton">Send Message</button>
+                        </ul>
+                        <button class="w-100 btn btn-info mt-3" type="button" id="saveConfigButton">Save Config</button>
+                    </div>
                 </div>
-
             </div>
-        </div>
 
+
+        </div>
     </div>
 
-
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true" id="liveToast">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Hello, world! This is a toast message.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 
 </body>
 

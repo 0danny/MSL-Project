@@ -1,5 +1,4 @@
 const { app, BrowserWindow } = require('electron')
-const { InitServer, ForceQuit } = require('./server.js')
 const path = require('path')
 
 function createWindow() {
@@ -20,15 +19,6 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
 
     console.log("Begin: Server")
-
-    var args = [
-        "cd renderer/test-server",
-        "java -Xms2048m -Xmx2048m -XX:PermSize=128m -jar FTBServer-1.6.4-965.jar nogui"
-    ]
-
-    InitServer(["/c", args.join('&')], mainWindow, function(pid) {
-        console.log("Callback: ", pid)
-    })
 }
 
 app.whenReady().then(() => {
@@ -39,11 +29,6 @@ app.whenReady().then(() => {
     })
 })
 
-app.on('closed', () => {
-
-})
-
 app.on('window-all-closed', function() {
-
     if (process.platform !== 'darwin') app.quit()
 })
