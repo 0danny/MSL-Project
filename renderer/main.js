@@ -22,6 +22,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    app.allowRendererProcessReuse = false
+
     createWindow()
 
     app.on('activate', function() {

@@ -20,6 +20,10 @@ body {
     height: 450px;
 }
 
+#modsBox {
+    height: 500px;
+}
+
 
 /* width */
 
@@ -36,7 +40,7 @@ body {
 /* Handle */
 
  ::-webkit-scrollbar-thumb {
-    background: #111;
+    background: #0DCAF0;
     border-radius: 10px;
 }
 
