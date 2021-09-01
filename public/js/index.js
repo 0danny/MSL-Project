@@ -7,6 +7,7 @@ const path = require('path')
 const readline = require('readline')
 const find = require('find-process')
 var dateFormat = require('dateformat');
+const archive = require('ls-archive')
 
 $(function() {
     beginFlow()
@@ -22,11 +23,13 @@ var javaPID = null
 var serverFileName = 'FTBServer-1.6.4-965.jar'
 var levelName = null
 
-function searchMods() {
-    fs.readdir(`${currentPath}/mods`, (err, files) => {
+async function searchMods() {
+    fs.readdir(`${currentPath}/mods`, async(err, files) => {
         files.forEach(file => {
 
-            fs.stat(`${currentPath}/mods/${file}`, (err, stats) => {
+            var filePath = `${currentPath}/mods/${file}`
+
+            fs.stat(filePath, async(err, stats) => {
                 if (err) {
                     console.log(`Error reading mode: ${file}.`)
                     throw err;
@@ -36,22 +39,41 @@ function searchMods() {
                     var pathObject = path.parse(file)
                     var buttonName = 'Unload'
                     var buttonColor = 'danger'
+                    var modName = pathObject.name
+                    var version = Math.round(stats.size / 1024) + "Kb"
 
-                    if (pathObject.ext == '.disabled') {
-                        buttonName = 'Load'
-                        buttonColor = 'success'
+                    if (file.includes('.jar') || file.includes('.zip')) {
+
+                        archive.readFile(filePath, path.normalize("mcmod.info"), function(err, manifestData) {
+                            if (!err) {
+                                var json = JSON.parse(manifestData.toString())
+
+                                try {
+                                    modName = json[0].name
+                                    version += ` | ${json[0].version}`
+                                    console.log("Manifest Data for file: " + file + " | ", json[0].name + " | " + json[0].version)
+                                } catch (err2) {
+                                    console.log("No mod info for file: ", file)
+                                }
+                            }
+
+                            if (pathObject.ext == '.disabled') {
+                                buttonName = 'Load'
+                                buttonColor = 'success'
+                            }
+
+                            $('#modsBox').append(`<li class="list-group-item shadow-sm d-flex flex-column">
+                            <p class="mb-1">${modName} - <b>${version}</b></p>
+                            <div class="d-flex flex-row align-items-center">
+                                <small>Modified on</small>
+                                <small class="text-info ms-1">${dateFormat(stats.mtime, "dd-mm-yyyy h:MM:ss tt")}</small>
+                                <button type="button" class="btn btn-${buttonColor} ms-auto" modName="${file}" id="unloadButton">${buttonName}</button>
+                                </div>
+                            </li>`)
+
+                            $('#modsCount').text(`Installed Mods: ${files.length}`)
+                        })
                     }
-
-                    $('#modsBox').append(`<li class="list-group-item shadow-sm d-flex flex-column">
-                    <p class="mb-1">${pathObject.name} - <b>${Math.round(stats.size / 1024)}Kb</b></p>
-                    <div class="d-flex flex-row align-items-center">
-                        <small>Modified on</small>
-                        <small class="text-info ms-1">${dateFormat(stats.mtime, "dd-mm-yyyy h:MM:ss tt")}</small>
-                        <button type="button" class="btn btn-${buttonColor} ms-auto" modName="${file}" id="unloadButton">${buttonName}</button>
-                        </div>
-                    </li>`)
-
-                    $('#modsCount').text(`Installed Mods: ${files.length}`)
                 }
             })
         })
@@ -136,10 +158,13 @@ async function startServer(data) {
 
     currentProcess.stderr.setEncoding('utf8');
     currentProcess.stderr.on('data', (data) => {
-        $('#outputBox').append(`<li class="list-group-item">${data}</li>`)
-        $('#outputBox').stop().animate({ scrollTop: $('#outputBox')[0].scrollHeight }, 500)
+        var match = data.match(/.{1,19}(\s|$)/g)
+        var split = match[1].trim().split(' ')
 
-        console.log("Testing: ", process.cpuUsage())
+        if (split[1] != '[STDERR]') { //Hacky piece of shit to remove the spam of errors from Crash Landing Server, which is what im testing with
+            $('#outputBox').append(`<li class="list-group-item">${data}</li>`)
+            $('#outputBox').stop().animate({ scrollTop: $('#outputBox')[0].scrollHeight }, 500)
+        }
     })
 
     currentProcess.on('close', (code) => {
