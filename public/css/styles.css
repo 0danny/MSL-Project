@@ -24,6 +24,22 @@ body {
     height: 500px;
 }
 
+#pluginsBox {
+    height: 500px;
+}
+
+#playersBox {
+    height: 200px;
+}
+
+#pills-normal {
+    height: 200px;
+}
+
+#pills-error {
+    height: 200px;
+}
+
 
 /* width */
 

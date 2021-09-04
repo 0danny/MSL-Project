@@ -6,25 +6,40 @@ const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
 const find = require('find-process')
-var dateFormat = require('dateformat');
+const dateFormat = require('dateformat');
 const archive = require('ls-archive')
 
 $(function() {
     beginFlow()
 
+    findVersion()
     readConfig()
     searchMods()
 })
 
 var currentProcess = null
-var currentPath = 'renderer/server'
+var currentPath = 'renderer/vanilla-server'
 var configObject = []
 var javaPID = null
-var serverFileName = 'FTBServer-1.6.4-965.jar'
+var serverFileName = 'spigot.jar'
 var levelName = null
+
+function findVersion() {
+    archive.readFile(`${currentPath}/${serverFileName}`, path.normalize("version.json"), function(err, manifestData) {
+        if (!err) {
+            var json = JSON.parse(manifestData.toString())
+
+            $('#gameVersion').html(`Game version is: <b>${json.name}<b>`)
+        }
+    })
+}
 
 async function searchMods() {
     fs.readdir(`${currentPath}/mods`, async(err, files) => {
+        if (files == undefined) {
+            return
+        }
+
         files.forEach(file => {
 
             var filePath = `${currentPath}/mods/${file}`
@@ -51,9 +66,9 @@ async function searchMods() {
                                 try {
                                     modName = json[0].name
                                     version += ` | ${json[0].version}`
-                                    console.log("Manifest Data for file: " + file + " | ", json[0].name + " | " + json[0].version)
+                                        //console.log("Manifest Data for file: " + file + " | ", json[0].name + " | " + json[0].version)
                                 } catch (err2) {
-                                    console.log("No mod info for file: ", file)
+                                    //console.log("No mod info for file: ", file)
                                 }
                             }
 
@@ -134,9 +149,10 @@ function saveConfig() {
 }
 
 async function startServer(data) {
+
     var args = [
         `cd ${currentPath}`,
-        `java -Xms${data.RAM}G -Xmx${data.RAM}G -XX:PermSize=${data.PERM}mb -jar ${serverFileName} nogui`
+        `java -Xms${data.RAM}G -Xmx${data.RAM}G -jar ${serverFileName} nogui`
     ]
 
     console.log("Starting with: ", data)
@@ -153,24 +169,68 @@ async function startServer(data) {
 
     currentProcess.stdout.setEncoding('utf8');
     currentProcess.stdout.on('data', (data) => {
-        console.log("Data: ", data);
+        handleConsoleOutput(data, 'stdout')
     })
 
     currentProcess.stderr.setEncoding('utf8');
     currentProcess.stderr.on('data', (data) => {
-        var match = data.match(/.{1,19}(\s|$)/g)
-        var split = match[1].trim().split(' ')
-
-        if (split[1] != '[STDERR]') { //Hacky piece of shit to remove the spam of errors from Crash Landing Server, which is what im testing with
-            $('#outputBox').append(`<li class="list-group-item">${data}</li>`)
-            $('#outputBox').stop().animate({ scrollTop: $('#outputBox')[0].scrollHeight }, 500)
-        }
+        handleConsoleOutput(data, 'stderr')
     })
 
     currentProcess.on('close', (code) => {
         sendToast("The server has been completely stopped.")
-        $('#outputBox').html('')
+
+        $('#pills-normal').html('')
+        $('#pills-error').html('')
     })
+}
+
+function handleConsoleOutput(data, type) {
+    if (type == 'stderr') {
+        $(`#pills-error`).append(`<li class="list-group-item">${data}</li>`)
+
+        $(`#pills-error`).stop().animate({ scrollTop: $(`#pills-error`)[0].scrollHeight }, 500)
+
+        return
+    }
+
+    if (data.includes("logged in with entity id")) {
+        parsePlayer(data)
+    }
+
+    $(`#pills-normal`).append(`<li class="list-group-item">${data}</li>`)
+
+    $(`#pills-normal`).stop().animate({ scrollTop: $(`#pills-normal`)[0].scrollHeight }, 500)
+}
+
+function parsePlayer(data) {
+    var regex = /^\[(.*?)\]\s\[(.*?)\]:\s(.*?)\[(.*?)\] logged in with entity id (.*?) at \(\[(.*?)\](.*?)\)/g
+
+    var match = regex.exec(data.trim())
+
+    console.log("Original player data: ", data)
+    console.log("Matches for player: ", match)
+
+    var IPSplit = match[4].split(':')
+
+    $('#playersBox').append(`<li class="list-group-item shadow-sm d-flex flex-column">
+        <div class="d-flex flex-row align-items-center">
+            <medium><b>${match[3]}</b></medium>
+            <div class="fs-5 ms-auto text-primary">${match[5]}</div>
+        </div>
+        <small>Last saved coordinates: <font color="red">(${match[7]})</font></small>
+        <small>IP Address & Port: <font color="orange">${IPSplit[0].slice(1)} | ${IPSplit[1]}</font></small>
+        <small>Logged in at: <font color="green">${match[1]}</font></small></li>`)
+
+    sendToast("A new player joined: " + match[3])
+}
+
+function parseConsoleOutput(data) {
+    var regex = /^(\d\d\d\d-\d\d-\d\d)\s([0-9][0-9]:[0-9][0-9]:[0-9][0-9])\s\[(.*?)\]\s\[(.*?)\]\s(.+)/g //An even worse regex statement 
+
+    var match = regex.exec(data)
+
+    return { date: match[1], time: match[2], type: match[3], origin: match[4], data: match[5] }
 }
 
 async function getChildProcess() {
@@ -235,6 +295,12 @@ function beginFlow() {
         sendToast("Saving server configuration...")
         saveConfig()
     })
+
+    $('#messageInput').on('keypress', function(e) {
+        if (e.which === 13) { //Have to fix this deprecated bullshit
+            $('#sendMessageButton').trigger()
+        }
+    });
 
     $('#startServerButton').on('click', function() {
         if ($('#startServerButton').text() == "Stop Server") {

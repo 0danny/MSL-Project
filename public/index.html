@@ -22,7 +22,7 @@
 <body>
 
     <div class="container-fluid">
-        <div class="text-center display-1 pb-4">MSL Project</div>
+        <div class="text-center display-1 pb-2">MSL Project</div>
 
         <div class="card">
             <ul class="card-header rounded nav nav-pills">
@@ -35,13 +35,16 @@
                 <li class="nav-item">
                     <button class="nav-link" id="pills-mods-tab" data-bs-toggle="pill" data-bs-target="#pills-mods" type="button" role="tab" aria-controls="pills-mods" aria-selected="true">Mods</button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="pills-players-tab" data-bs-toggle="pill" data-bs-target="#pills-players" type="button" role="tab" aria-controls="pills-plugins" aria-selected="true">Players</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-main" role="tabpanel" aria-labelledby="pills-main-tab">
                     <div class="card-body">
-                        <div class="alert alert-info" role="alert">
-                            Below is the information that is being redirected from stdout.
+                        <div class="alert alert-info" role="alert" id="gameVersion">
+                            Game version is:
                         </div>
                         <button class="w-100 btn btn-info mb-3" type="button" id="saveButton">Save World</button>
                         <button class="w-100 btn btn-info mb-3" type="button" id="startServerButton">Start Server</button>
@@ -54,25 +57,27 @@
                         </div>
                         <h5 class="card-title">Minecraft Server Output</h5>
 
-                        <!--
                         <div class="card">
                             <ul class="card-header rounded nav nav-pills">
                                 <li class="nav-item">
-                                    <button class="nav-link active" id="pills-main-tab" data-bs-toggle="pill" data-bs-target="#pills-main" type="button" role="tab" aria-controls="pills-main" aria-selected="true">Main</button>
+                                    <button class="nav-link active" id="pills-normal-tab" data-bs-toggle="pill" data-bs-target="#pills-normal" type="button" role="tab" aria-controls="pills-normal" aria-selected="true">Normal</button>
                                 </li>
                                 <li class="nav-item">
-                                    <button class="nav-link" id="pills-config-tab" data-bs-toggle="pill" data-bs-target="#pills-config" type="button" role="tab" aria-controls="pills-config" aria-selected="true">Configuration</button>
-                                </li>
-                                <li class="nav-item">
-                                    <button class="nav-link" id="pills-mods-tab" data-bs-toggle="pill" data-bs-target="#pills-mods" type="button" role="tab" aria-controls="pills-mods" aria-selected="true">Mods</button>
+                                    <button class="nav-link" id="pills-error-tab" data-bs-toggle="pill" data-bs-target="#pills-error" type="button" role="tab" aria-controls="pills-error" aria-selected="true">Error</button>
                                 </li>
                             </ul>
-                        </div>
-                        -->
 
-                        <ul class="bg-light rounded overflow-auto border border-info p-1 list-group" id="outputBox">
-                            <li class="list-group-item">Electron loaded.</li>
-                        </ul>
+                            <div class="tab-content" id="pills-outputContent">
+                                <div class="tab-pane fade show active overflow-auto m-1" id="pills-normal" role="tabpanel" aria-labelledby="pills-normal-tab">
+                                    <li class="list-group-item">Electron loaded.</li>
+                                </div>
+                                <div class="tab-pane fade overflow-auto m-1" id="pills-error" role="tabpanel" aria-labelledby="pills-error-tab">
+                                    <li class="list-group-item">Error tab loaded.</li>
+                                </div>
+                            </div>
+                        </div>
+
+
 
                         <div class="input-group pt-3">
                             <input type="text" class="form-control" placeholder="Message for server..." aria-label="Message for server..." id="messageInput">
@@ -94,6 +99,21 @@
                     <div class="card-body">
                         <div class="card-header rounded border border-info" id="modsCount">Installed Mods: 0</div>
                         <ul class="bg-light rounded overflow-auto p-1 list-group" id="modsBox">
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="pills-players" role="tabpanel" aria-labelledby="pills-players-tab">
+                    <div class="card-body">
+                        <div class="card-header rounded border border-info">
+                            <div class="text-center display-6 pb-2"><b>0</b> Players Connected</div>
+                            <div class="input-group pt-1">
+                                <input type="text" class="form-control" placeholder="Search for player..." aria-label="Search for player..." id="searchPlayerInput">
+                                <button class="btn btn-primary" type="button" id="sendMessageButton">Search</button>
+                            </div>
+                        </div>
+                        <ul class="bg-light rounded overflow-auto p-1 list-group" id="playersBox">
+
                         </ul>
                     </div>
                 </div>
