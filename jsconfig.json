@@ -3,6 +3,17 @@
         "include": [
             "jquery"
         ]
-    }
-
+    },
+    "compilerOptions": {
+        "target": "ES6",
+        "allowSyntheticDefaultImports": true,
+        "module": "commonjs",
+        "baseUrl": ".",
+        "paths": {
+          "*": [
+            "*",
+            "public/*"
+          ]
+        }
+      }
 }

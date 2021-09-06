@@ -16,7 +16,7 @@ body {
     height: 250px;
 }
 
-#serverConfigBox {
+#serverPropertiesBox {
     height: 450px;
 }
 
@@ -29,7 +29,7 @@ body {
 }
 
 #playersBox {
-    height: 200px;
+    height: 450px;
 }
 
 #pills-normal {

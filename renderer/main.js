@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcRenderer } = require('electron')
 const path = require('path')
 
 function createWindow() {
@@ -18,8 +18,12 @@ function createWindow() {
 
     mainWindow.webContents.openDevTools()
 
-    console.log("Begin: Server")
+    mainWindow.on('close', function(e) {
+        mainWindow.webContents.send('close')
+    })
 }
+
+
 
 app.whenReady().then(() => {
     app.allowRendererProcessReuse = false
