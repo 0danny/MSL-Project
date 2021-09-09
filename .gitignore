@@ -1,5 +1,4 @@
 test-server/
 node_modules/
-renderer/server
-renderer/vanilla-server
-renderer/valhelsia-server
+renderer/servers
+test-servers

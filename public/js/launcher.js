@@ -1,36 +1,93 @@
 require('app-module-path').addPath(__dirname);
 
-
 //imports
-const { ipcRenderer } = require('electron')
+const { ipcRenderer, remote } = require('electron')
 const child_process = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
 const dateFormat = require('dateformat');
 const archive = require('ls-archive')
-const { readSettings, writeSettings } = require('js/settingsParser.js')
-const { sendToast } = require('js/helper')
+const { readSettings, writeSettings, settingsObject } = require('js/settingsParser.js')
+const { sendToast } = require('js/helper');
+const dialog = remote.dialog;
 
 $(function() {
     beginFlow()
 
-    findVersion()
-    readProperties()
     readSettings()
-    searchMods()
+    getServers()
 })
 
-var javaPID = null
 var levelName = null
 var currentProcess = null
-var currentPath = 'renderer/valhelsia-server'
-var serverFileName = 'forge-1.16.5-36.2.2.jar'
+var currentPath = 'renderer/servers'
+var currentServerName = '/vanilla-server'
+var serverFileName = null
 var propertiesObject = []
 var players = []
 
-function findVersion() {
-    archive.readFile(`${currentPath}/${serverFileName}`, path.normalize("version.json"), function(err, manifestData) {
+function getServers() {
+
+    $(document).on('click', '#serverPickerButton', function() {
+
+        switch ($(this).text()) {
+            case 'New Server':
+                return
+            case 'Import Server':
+                new bootstrap.Modal(document.getElementById('serverImportModal')).show()
+                return
+        }
+
+        //This is hacky and shit because i'm assuming that serverData is always gonna be at index 0
+        //var serverObject = settingsObject[0].serverData.filter(element => element.name == $(this).attr('serverName'))[0]
+
+        $('#currentServerText').text($(this).attr('serverName'))
+
+        currentServerName = `/${$(this).attr('serverName')}`
+
+        //findVersion()
+        readProperties()
+        searchPlugins()
+    })
+
+    if (fs.existsSync(`${currentPath}`)) {
+
+        fs.readdir(currentPath, async(err, files) => {
+
+            if (files == undefined || files.length <= 0) {
+                console.log("No servers installed.")
+                return
+            }
+
+            files.forEach(file => {
+
+                fs.stat(`${currentPath}/${file}`, async(err, stats) => {
+                    if (err) {
+                        console.log(`Error reading mode: ${file}.`)
+                        throw err
+                    }
+
+                    console.log(file)
+
+                    if (stats.isDirectory()) {
+                        $('#serverDropDown').append(`<li><a class="dropdown-item" id="serverPickerButton" href="#" serverName=${file}>${file}</a></li>`)
+                    }
+                })
+            })
+
+            return true
+        })
+    } else {
+        sendToast("Server's folder does not exist, cannot continue.")
+        return false
+    }
+}
+
+function findVersion(fileName) {
+    serverFileName = fileName
+
+    archive.readFile(`${currentPath}/${currentServerName}/${serverFileName}`, path.normalize("version.json"), function(err, manifestData) {
         if (!err) {
             var json = JSON.parse(manifestData.toString())
 
@@ -41,27 +98,54 @@ function findVersion() {
     })
 }
 
-async function searchMods() {
-    fs.readdir(`${currentPath}/mods`, async(err, files) => {
-        if (files == undefined) {
+async function searchPlugins() {
+
+    $('#pluginsBox').html('')
+    $('#pluginsCount').text(`Installed Plugins: 0`)
+
+    var folderPath = null
+
+    if (fs.existsSync(`${currentPath}/${currentServerName}/plugins`)) {
+        folderPath = `${currentPath}/${currentServerName}/plugins`
+    } else if (fs.existsSync(`${currentPath}/${currentServerName}/mods`)) {
+        folderPath = `${currentPath}/${currentServerName}/mods`
+    }
+
+    if (folderPath == null) {
+        $('#pills-plugins-tab').parent().css('display', 'none')
+        return
+    } else {
+        $('#pills-plugins-tab').parent().css('display', 'block')
+    }
+
+    await fs.promises.readdir(folderPath, async(err, files) => {
+
+        files = files.filter(element => element.includes('.jar') || element.includes('.zip'))
+
+        if (files == undefined || files.length <= 0) {
+            $('#pills-plugins-tab').parent().css('display', 'none')
+            console.log("No plugins installed.")
             return
+        } else {
+            $('#pills-plugins-tab').parent().css('display', 'block')
         }
 
-        files.forEach(file => {
+        files.forEach(async function(file, index) {
 
-            var filePath = `${currentPath}/mods/${file}`
+            var filePath = `${folderPath}/${file}`
 
-            fs.stat(filePath, async(err, stats) => {
+            await fs.promises.stat(filePath, async(err, stats) => {
+
                 if (err) {
                     console.log(`Error reading mode: ${file}.`)
-                    throw err;
+                    throw err
                 }
 
                 if (!stats.isDirectory()) {
                     var pathObject = path.parse(file)
                     var buttonName = 'Unload'
                     var buttonColor = 'danger'
-                    var modName = pathObject.name
+                    var pluginName = pathObject.name
                     var version = Math.round(stats.size / 1024) + "Kb"
 
                     if (file.includes('.jar') || file.includes('.zip')) {
@@ -71,7 +155,7 @@ async function searchMods() {
                                 var json = JSON.parse(manifestData.toString())
 
                                 try {
-                                    modName = json[0].name
+                                    pluginName = json[0].name
                                     version += ` | ${json[0].version}`
                                         //console.log("Manifest Data for file: " + file + " | ", json[0].name + " | " + json[0].version)
                                 } catch (err2) {
@@ -84,27 +168,32 @@ async function searchMods() {
                                 buttonColor = 'success'
                             }
 
-                            $('#modsBox').append(`<li class="list-group-item shadow-sm d-flex flex-column">
-                            <p class="mb-1">${modName} - <b>${version}</b></p>
+                            $('#pluginsBox').append(`<li class="list-group-item shadow-sm d-flex flex-column">
+                            <p class="mb-1">${pluginName} - <b>${version}</b></p>
                             <div class="d-flex flex-row align-items-center">
                                 <small>Modified on</small>
                                 <small class="text-info ms-1">${dateFormat(stats.mtime, "dd-mm-yyyy h:MM:ss tt")}</small>
-                                <button type="button" class="btn btn-${buttonColor} ms-auto" modName="${file}" id="unloadButton">${buttonName}</button>
+                                <button type="button" class="btn btn-${buttonColor} ms-auto" pluginName="${file}" id="unloadButton">${buttonName}</button>
                                 </div>
                             </li>`)
-
-                            $('#modsCount').text(`Installed Mods: ${files.length}`)
                         })
                     }
                 }
             })
         })
+
+        $('#pluginsCount').text(`Installed Plugins: ${files.length}`)
     })
 }
 
 function readProperties() {
+
+    propertiesObject = []
+    levelName = ''
+    $('#serverPropertiesBox').html('')
+
     var lineReader = readline.createInterface({
-        input: fs.createReadStream(currentPath + '/server.properties')
+        input: fs.createReadStream(`${currentPath}/${currentServerName}/server.properties`)
     })
 
     lineReader.on('line', function(line) {
@@ -123,7 +212,6 @@ function readProperties() {
 
             propertiesObject.push({ id: lineSplit[0], value: lineSplit[1] })
         }
-        //console.log("Prop Lines: ", line)
     })
 
     lineReader.on('close', () => {
@@ -138,7 +226,7 @@ function saveProperties() {
         content += `${arrayItem.id}=` + $(`#${arrayItem.id}-inputBox`).val() + '\r\n'
     })
 
-    fs.writeFile(currentPath + '/server.properties', content, function(err) {
+    fs.writeFile(`${currentPath}/${currentServerName}/server.properties`, content, function(err) {
         if (err) {
             return sendToast("Error saving file: ", err)
         }
@@ -150,7 +238,7 @@ async function startServer(data) {
 
     var JVMArguments = $('#jvmArgumentsBox').val().split(' ')
 
-    var serverFileLocation = path.resolve(__dirname, `../${currentPath}/${serverFileName}`)
+    var serverFileLocation = path.resolve(__dirname, `../${currentPath}/${currentServerName}/${serverFileName}`)
 
     var args = [`-Xms${data.RAM}G`, `-Xmx${data.RAM}G`]
 
@@ -165,7 +253,9 @@ async function startServer(data) {
     console.log("Starting with: ", data)
     console.log("Arguments: ", args)
 
-    currentProcess = child_process.spawn("C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe", args, { cwd: path.resolve(__dirname, `../${currentPath}`) })
+    //"C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe"
+
+    currentProcess = child_process.spawn('java', args, { cwd: path.resolve(__dirname, `../${currentPath}/${currentServerName}`) })
 
     currentProcess.on('error', (error) => {
         sendToast("There was an error starting the process: " + error)
@@ -173,13 +263,11 @@ async function startServer(data) {
 
     currentProcess.stdout.setEncoding('utf8');
     currentProcess.stdout.on('data', (data) => {
-        console.log(data)
         handleConsoleOutput(data, 'stdout')
     })
 
     currentProcess.stderr.setEncoding('utf8');
     currentProcess.stderr.on('data', (data) => {
-        console.log(data)
         handleConsoleOutput(data, 'stderr')
     })
 
@@ -213,7 +301,7 @@ function safelyForceQuit() {
     sendToast("Force quitting server...")
     writeSettings()
 
-    if (currentProcess != null && javaPID != null) {
+    if (currentProcess != null) {
         sendMessage('save-all')
         $('#messageInput').val('')
         $('#pills-normal').html('')
@@ -278,24 +366,44 @@ function preCloseClean() {
 
 function beginFlow() {
 
-    $('#unloadButton').on('click', function() {
-        console.log("Clicked")
-        console.log("Found Mode: " + $(this).attr('modName'))
+    $('#serverImport-pathDialogButton').on('click', async function() {
+        var dg = await dialog.showOpenDialog({
+            properties: ['openDirectory']
+        })
+
+        $('#serverInput-pathInputBox').val(dg.filePaths[0])
+
+        console.log(dg)
     })
 
+    $('#serverImport-JARDialogButton').on('click', async function() {
+        var dg = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [
+                { name: 'Server File', extensions: ["jar"] }
+            ]
+        })
+
+        $('#serverInput-JARInputBox').val(dg.filePaths[0])
+
+        console.log(dg)
+    })
+
+    //serverImport-JARDialogButton
+
     $(document).on('click', '#unloadButton', function() {
-        var pathObject = path.parse($(this).attr('modName'))
+        var pathObject = path.parse($(this).attr('pluginName'))
         var newPath = null
 
         if (pathObject.ext == '.disabled') {
-            newPath = `${currentPath}/mods/${pathObject.base.replace(pathObject.ext, '')}`
-            $(this).attr('modName', `${pathObject.base.replace(pathObject.ext, '')}`).text('Unload').removeClass('btn-success').addClass('btn-danger')
+            newPath = `${currentPath}/${currentServerName}/mods/${pathObject.base.replace(pathObject.ext, '')}`
+            $(this).attr('pluginName', `${pathObject.base.replace(pathObject.ext, '')}`).text('Unload').removeClass('btn-success').addClass('btn-danger')
         } else {
-            newPath = `${currentPath}/mods/${pathObject.base}.disabled`
-            $(this).attr('modName', `${pathObject.base}.disabled`).text('Load').removeClass('btn-danger').addClass('btn-success')
+            newPath = `${currentPath}/${currentServerName}/mods/${pathObject.base}.disabled`
+            $(this).attr('pluginName', `${pathObject.base}.disabled`).text('Load').removeClass('btn-danger').addClass('btn-success')
         }
 
-        fs.rename(`${currentPath}/mods/${pathObject.base}`, newPath, function(err) {
+        fs.rename(`${currentPath}/${currentServerName}/mods/${pathObject.base}`, newPath, function(err) {
             if (err) console.log('ERROR: ' + err)
         })
     })

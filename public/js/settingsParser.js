@@ -4,6 +4,7 @@ const { sendToast } = require('js/helper.js')
 var settingsPath = 'settings.json'
 
 var settingsObject = [
+    { name: 'Server Data', serverData: [] },
     { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' }
 ]
 
@@ -30,8 +31,16 @@ function readSettings() {
     })
 }
 
-function applySettings() {
+function loopData(callback) {
     settingsObject.forEach(function(setting) {
+        if (setting.target != undefined) {
+            callback(setting)
+        }
+    })
+}
+
+function applySettings() {
+    loopData((setting) => {
         switch ($(setting.target).prop('nodeName')) {
             case 'INPUT':
                 $(setting.target).val(setting.data)
@@ -41,7 +50,7 @@ function applySettings() {
 }
 
 function writeSettings() {
-    settingsObject.forEach(function(setting) {
+    loopData((setting) => {
         switch ($(setting.target).prop('nodeName')) {
             case 'INPUT':
                 setting.data = $(setting.target).val()
@@ -56,4 +65,4 @@ function writeSettings() {
     })
 }
 
-module.exports = { readSettings, writeSettings }
+module.exports = { readSettings, writeSettings, settingsObject }
