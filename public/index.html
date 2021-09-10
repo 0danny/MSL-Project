@@ -186,19 +186,25 @@
                     </div>
 
                     <div class="input-group mb-3">
-                        <span class="input-group-text" id="serverInput-pathText">JAR File Path</span>
-                        <input type="text" class="form-control" placeholder="JAR path..." id="serverInput-JARInputBox" aria-describedby="serverInput-JARText" value="">
-                        <button type="button" class="btn btn-info" id="serverImport-JARDialogButton">Pick Server JAR</button>
-                    </div>
-
-                    <div class="input-group mb-3">
                         <span class="input-group-text" id="serverInput-NameText">Server Name</span>
                         <input type="text" class="form-control" placeholder="Server name..." id="serverInput-NameInputBox" aria-describedby="serverInput-NameText" value="">
+                    </div>
+
+                    <ul class="card-header rounded">
+                        JAR Files
+                    </ul>
+
+                    <div class="d-flex flex-column bg-light rounded mb-3 p-2" id="serverInput-JARFiles">
+
+                    </div>
+
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="serverInput-ProgressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: 0%"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="serverImport-save">Save changes</button>
+                    <button type="button" class="btn btn-primary" id="serverImport-ImportButton">Import</button>
                 </div>
             </div>
         </div>

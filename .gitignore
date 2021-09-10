@@ -1,4 +1,5 @@
 test-server/
 node_modules/
-renderer/servers
+servers
 test-servers
+release-builds

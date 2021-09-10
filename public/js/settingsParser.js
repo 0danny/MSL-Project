@@ -1,5 +1,6 @@
 const fs = require('fs')
 const { sendToast } = require('js/helper.js')
+const pathHandlerObj = require('js/pathHandler')
 
 var settingsPath = 'settings.json'
 
@@ -39,6 +40,10 @@ function loopData(callback) {
     })
 }
 
+function addServerData(object) {
+    settingsObject[0].serverData.push(object)
+}
+
 function applySettings() {
     loopData((setting) => {
         switch ($(setting.target).prop('nodeName')) {
@@ -50,6 +55,8 @@ function applySettings() {
 }
 
 function writeSettings() {
+    console.log("Writing the settings file.")
+
     loopData((setting) => {
         switch ($(setting.target).prop('nodeName')) {
             case 'INPUT':
@@ -58,11 +65,23 @@ function writeSettings() {
         }
     })
 
-    fs.writeFile(settingsPath, JSON.stringify(settingsObject), { encoding: "utf8" }, (err) => {
-        if (err) {
-            sendToast("There was an error writing the settings file...")
-        }
-    })
+    console.log('Before Write: ', settingsObject)
+
+    try {
+        fs.writeFileSync(settingsPath, JSON.stringify(settingsObject), { encoding: "utf8" })
+    } catch (err) {
+        sendToast("There was an error writing the settings file...")
+    }
 }
 
-module.exports = { readSettings, writeSettings, settingsObject }
+function getServerData(name) {
+    var array = settingsObject[0].serverData.filter(element => element.serverName == name)
+
+    if (array.length <= 0) {
+        throw err
+    } else {
+        return array[0]
+    }
+}
+
+module.exports = { readSettings, writeSettings, addServerData, getServerData }
