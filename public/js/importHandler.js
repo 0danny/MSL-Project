@@ -6,6 +6,7 @@ const { sendToast, getFiles } = require('js/helper')
 const pathHandlerObj = require('js/pathHandler')
 const { writeSettings, addServerData } = require('js/settingsParser')
 const { refreshServers } = require('js/serverHandler')
+const path = require('path')
 
 function initImportHandler() {
     $('#serverImport-pathDialogButton').on('click', async function() {
@@ -30,7 +31,11 @@ function initImportHandler() {
     })
 
     $('#serverImport-ImportButton').on('click', function() {
-        importServer($('#serverInput-pathInputBox').val(), $('input[name="serverInput-Radios"]:checked').val(), $('#serverInput-NameInputBox').val())
+        importServer(
+            $('#serverInput-pathInputBox').val(),
+            $('input[name="serverInput-Radios"]:checked').val(),
+            $('#serverInput-NameInputBox').val()
+        )
     })
 }
 

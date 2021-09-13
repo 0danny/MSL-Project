@@ -3,26 +3,29 @@ const path = require('path')
 const readline = require('readline')
 const dateFormat = require('dateformat')
 const archive = require('ls-archive')
+const { ipcRenderer } = require('electron')
 const { sendToast } = require('js/helper')
 const pathHandlerObj = require('./pathHandler')
 const { getServerData } = require('js/settingsParser')
+const child_process = require('child_process')
 
 var propertiesObject = []
+var players = []
 var levelName = null
+var currentProcess = null
 
 function initServerHandler() {
     $(document).on('click', '#serverPickerButton', function() {
 
         switch ($(this).text()) {
             case 'New Server':
+                new bootstrap.Modal(document.getElementById('serverCreatorModal')).show()
+                    //TODO
                 return
             case 'Import Server':
                 new bootstrap.Modal(document.getElementById('serverImportModal')).show()
                 return
         }
-
-        //This is hacky and shit because i'm assuming that serverData is always gonna be at index 0
-        //var serverObject = settingsObject[0].serverData.filter(element => element.name == $(this).attr('serverName'))[0]
 
         $('#currentServerText').text($(this).attr('serverName'))
 
@@ -30,12 +33,229 @@ function initServerHandler() {
 
         pathHandlerObj.serverFileName = getServerData(pathHandlerObj.currentServerName).serverFileName
 
-        //findVersion()
+        findVersion()
         readProperties()
         searchPlugins()
     })
 
+    //TODO: Needs refactoring / pisses me off looking at this
+    $(document).on('click', '#unloadButton', function() {
+        var pathObject = path.parse($(this).attr('pluginName'))
+        var newPath = null
+
+        if (pathObject.ext == '.disabled') {
+            newPath = `${pathHandlerObj.getServerPath()}/mods/${pathObject.base.replace(pathObject.ext, '')}`
+            $(this).attr('pluginName', `${pathObject.base.replace(pathObject.ext, '')}`).text('Unload').removeClass('btn-success').addClass('btn-danger')
+        } else {
+            newPath = `${pathHandlerObj.getServerPath()}/mods/${pathObject.base}.disabled`
+            $(this).attr('pluginName', `${pathObject.base}.disabled`).text('Load').removeClass('btn-danger').addClass('btn-success')
+        }
+
+        fs.rename(`${pathHandlerObj.getServerPath()}/mods/${pathObject.base}`, newPath, function(err) {
+            if (err) console.log('ERROR: ' + err)
+        })
+    })
+
+    $(document).on('click', '#banButton', function() {
+        sendMessage(`ban ${$(this).attr('playerName')}`)
+    })
+
+    $(document).on('click', '#kickButton', function() {
+        sendMessage(`kick ${$(this).attr('playerName')}`)
+    })
+
+    $(document).on('click', '#giveOPButton', function() {
+        sendMessage(`op ${$(this).attr('playerName')}`)
+    })
+
+    $(document).on('click', '#removeOPButton', function() {
+        sendMessage(`deop ${$(this).attr('playerName')}`)
+    })
+
+    $('#sendMessageButton').on('click', function() {
+        sendMessage($('#messageInput').val())
+        $('#messageInput').val('')
+    })
+
+    $('#saveButton').on('click', function() {
+        sendMessage('save-all')
+    })
+
+    $('#savePropertiesButton').on('click', function() {
+        sendToast("Saving server configuration...")
+        saveProperties()
+    })
+
+    $('#forceQuitButton').on('click', function() {
+        safelyForceQuit()
+    })
+
+    $('#messageInput').on('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage($('#messageInput').val())
+            $('#messageInput').val('')
+        }
+    })
+
+    $('#startServerButton').on('click', function() {
+        if ($('#startServerButton').text() == "Stop Server") {
+            sendMessage('stop')
+
+            preCloseClean()
+
+            $('#startServerButton').text('Start Server')
+        } else {
+            startServer({ RAM: $('#ram-inputBox').val(), PERM: $('#permSize-inputBox').val() })
+
+            $('#startServerButton').text('Stop Server')
+        }
+    })
+
+    ipcRenderer.on('close', () => {
+        safelyForceQuit()
+    })
+
     refreshServers()
+}
+
+async function startServer(data) {
+
+    var JVMArguments = $('#jvmArgumentsBox').val().split(' ')
+
+    var args = [`-Xms${data.RAM}G`, `-Xmx${data.RAM}G`]
+
+    if ($("#useArguments").is(':checked') && JVMArguments.length > 0) {
+        args = args.concat(JVMArguments)
+    }
+
+    args.push('-jar')
+    args.push(pathHandlerObj.getServerFilePath())
+    args.push('nogui')
+
+    console.log("Starting with: ", data)
+    console.log("Arguments: ", args)
+
+    //"C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe" //Alt java version
+
+    currentProcess = child_process.spawn('java', args, { cwd: pathHandlerObj.getServerPath() })
+
+    currentProcess.on('error', (error) => {
+        sendToast("There was an error starting the process: " + error)
+    })
+
+    currentProcess.stdout.setEncoding('utf8');
+    currentProcess.stdout.on('data', (data) => {
+        console.log("Data: ", data)
+        handleConsoleOutput(data, 'stdout')
+    })
+
+    currentProcess.stderr.setEncoding('utf8');
+    currentProcess.stderr.on('data', (data) => {
+        console.log("Err: ", data)
+        handleConsoleOutput(data, 'stderr')
+    })
+
+    currentProcess.on('close', (code) => {
+        sendToast("The server has been completely stopped.")
+
+        $("#serverStatus").text('Off')
+        $("#serverStatus").removeClass('text-success')
+        $("#serverStatus").addClass('text-danger')
+
+        $('#pills-normal').html('')
+        $('#pills-error').html('')
+    })
+}
+
+function handleConsoleOutput(data, type) {
+    if (type == 'stderr') {
+        $(`#pills-error`).append(`<li class="list-group-item">${data}</li>`)
+
+        $(`#pills-error`).stop().animate({ scrollTop: $(`#pills-error`)[0].scrollHeight }, 500)
+
+        return
+    }
+
+    if (data.includes("logged in with entity id") || data.includes('left the game')) {
+        parsePlayer(data)
+    }
+
+    if (data.includes('For help, type \"help\"')) {
+        $("#serverStatus").text('Running')
+        $("#serverStatus").removeClass('text-danger')
+        $("#serverStatus").addClass('text-success')
+
+        readProperties()
+    }
+
+    $(`#pills-normal`).append(`<li class="list-group-item">${data}</li>`)
+
+    $(`#pills-normal`).stop().animate({ scrollTop: $(`#pills-normal`)[0].scrollHeight }, 500)
+}
+
+function safelyForceQuit() {
+    sendToast("Force quitting server...")
+    writeSettings()
+
+    if (currentProcess != null) {
+        sendMessage('save-all')
+        $('#messageInput').val('')
+        $('#pills-normal').html('')
+        $('#pills-error').html('')
+        currentProcess.stdin.end();
+        currentProcess.kill()
+    }
+}
+
+function parsePlayer(data) {
+    if (data.includes('left the game')) {
+        var match = /^\[(.*?)\]\s\[(.*?)\]:\s(.*?)\sleft the game/g.exec(data.trim())
+
+        if (players.includes(match[3])) {
+            sendToast(`${match[3]} has left the game.`)
+
+            $(`#${match[3]}-playerobject`).remove()
+            players.splice(players.indexOf(match[3]), 1)
+        }
+    } else {
+
+        var match = /^\[(.*?)\]\s(.+?):\s(.*?)\[(.*?)\] logged in with entity id (.*?) at \((.*?)\)/g.exec(data.trim())
+
+        var IPSplit = match[4].split(':')
+
+        $('#playersBox').append(`<li class="list-group-item shadow-sm d-flex flex-column" id="${match[3]}-playerobject">
+            <div class="d-flex flex-row align-items-center">
+                <medium><b>${match[3]}</b></medium>
+                <div class="fs-5 ms-auto text-primary">${match[5]}</div>
+            </div>
+            <small>Last saved coordinates: <font color="red">(${match[6]})</font></small>
+            <small>IP Address & Port: <font color="orange">${IPSplit[0].slice(1)} | ${IPSplit[1]}</font></small>
+            <small>Logged in at: <font color="green">${match[1]}</font></small>
+
+            <div class="d-flex flex-row pt-2">
+                <button class="btn btn-danger w-100 me-1" type="button" id="banButton" playerName="${match[3]}">Ban</button>
+                <button class="btn btn-warning w-100 me-1" type="button" id="kickButton" playerName="${match[3]}">Kick</button>
+                <button class="btn btn-success w-100 me-1" type="button" id="giveOPButton" playerName="${match[3]}">Give OP</button>
+                <button class="btn btn-danger w-100" type="button" id="removeOPButton" playerName="${match[3]}">Remove OP</button>
+            </div>
+        </li>`)
+
+        sendToast("A new player joined: " + match[3])
+
+        players.push(match[3])
+    }
+
+    $('#playersConnected').html(`<b>${players.length}</b> Players Connected`)
+}
+
+function sendMessage(msg) {
+    if (currentProcess != null) {
+        currentProcess.stdin.write(`${msg}\n`);
+    }
+}
+
+function preCloseClean() {
+    currentProcess.stdin.end();
 }
 
 function refreshServers() {
@@ -67,42 +287,53 @@ function refreshServers() {
             })
         })
     } else {
-        sendToast("Server's folder does not exist, cannot continue.")
+        sendToast("Server's folder does not exist, creating...")
+
+        try {
+            fs.mkdirSync(`${pathHandlerObj.getWorkingDirectory()}/servers`)
+        } catch (err) {
+            console.log("Could not create servers folder: ", err)
+        }
     }
 }
 
-function findVersion(fileName) {
-    serverFileName = fileName
-
-    archive.readFile(`${currentPath}/${currentServerName}/${serverFileName}`, path.normalize("version.json"), function(err, manifestData) {
+function findVersion() {
+    archive.readFile(pathHandlerObj.getServerFilePath(), path.normalize("version.json"), function(err, manifestData) {
         if (!err) {
             var json = JSON.parse(manifestData.toString())
 
-            $('#gameVersion').html(`Game version is: <b>${json.name}<b>`)
+            if (json.name != undefined) {
+                $('#gameVersion').html(`Game version is: <b>${json.name}<b>`)
+            } else {
+                fallback()
+            }
         } else {
-            $('#gameVersion').html(`Game version is: <b>${path.parse(serverFileName).name}<b>`)
+            fallback()
         }
     })
+
+    const fallback = () => {
+        $('#gameVersion').html(`Game version is: <b>${path.parse(pathHandlerObj.serverFileName).name}<b>`)
+    }
 }
 
 async function searchPlugins() {
+
+    //Needs re-fractoring very badly.
 
     $('#pluginsBox').html('')
     $('#pluginsCount').text(`Installed Plugins: 0`)
 
     var folderPath = null
 
-    if (fs.existsSync(`${pathHandlerObj.getServerPath()}/plugins`)) {
-        folderPath = `${pathHandlerObj.getServerPath()}/plugins`
-    } else if (fs.existsSync(`${pathHandlerObj.getServerPath()}/mods`)) {
-        folderPath = `${pathHandlerObj.getServerPath()}/mods`
-    }
-
-    if (folderPath == null) {
+    var serverPath = pathHandlerObj.getServerPath()
+    if (fs.existsSync(`${serverPath}/plugins`)) {
+        folderPath = `${serverPath}/plugins`
+    } else if (fs.existsSync(`${serverPath}/mods`)) {
+        folderPath = `${serverPath}/mods`
+    } else {
         $('#pills-plugins-tab').parent().css('display', 'none')
         return
-    } else {
-        $('#pills-plugins-tab').parent().css('display', 'block')
     }
 
     await fs.promises.readdir(folderPath, async(err, files) => {
@@ -117,7 +348,7 @@ async function searchPlugins() {
             $('#pills-plugins-tab').parent().css('display', 'block')
         }
 
-        files.forEach(async function(file, index) {
+        files.forEach(async function(file) {
 
             var filePath = `${folderPath}/${file}`
 
@@ -144,10 +375,7 @@ async function searchPlugins() {
                                 try {
                                     pluginName = json[0].name
                                     version += ` | ${json[0].version}`
-                                        //console.log("Manifest Data for file: " + file + " | ", json[0].name + " | " + json[0].version)
-                                } catch (err2) {
-                                    //console.log("No mod info for file: ", file)
-                                }
+                                } catch (err) {}
                             }
 
                             if (pathObject.ext == '.disabled') {
@@ -174,6 +402,10 @@ async function searchPlugins() {
 }
 
 function readProperties() {
+
+    if (!fs.existsSync(`${pathHandlerObj.getServerPath()}/server.properties`)) {
+        return
+    }
 
     propertiesObject = []
     levelName = ''

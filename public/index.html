@@ -22,7 +22,7 @@
 <body>
 
     <div class="container-fluid">
-        <div class="text-center display-1 pb-2">MSL Project</div>
+        <div class="text-center display-2 pb-2">MSL Project</div>
 
         <div class="card">
             <ul class="card-header rounded nav nav-pills d-flex flex-row align-items-center">
@@ -32,7 +32,7 @@
                 <li class="nav-item">
                     <button class="nav-link" id="pills-properties-tab" data-bs-toggle="pill" data-bs-target="#pills-properties" type="button" role="tab" aria-controls="pills-properties" aria-selected="true">Configuration</button>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" style="display: none">
                     <button class="nav-link" id="pills-plugins-tab" data-bs-toggle="pill" data-bs-target="#pills-plugins" type="button" role="tab" aria-controls="pills-plugins" aria-selected="true">Plugins</button>
                 </li>
                 <li class="nav-item">
@@ -59,8 +59,17 @@
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-main" role="tabpanel" aria-labelledby="pills-main-tab">
                     <div class="card-body">
-                        <div class="alert alert-info" role="alert" id="gameVersion">
-                            Game version is:
+                        <div class="d-flex flex-row">
+                            <div class="alert alert-info w-100 me-2" role="alert" id="gameVersion">
+                                Game version is:
+                            </div>
+                            <div class="alert alert-primary w-100" role="alert" id="MSLVersion">
+                                MSL Version: V0.1 | Developer: <b>DannyOCE</b>
+                            </div>
+                            <div class="alert alert-primary w-100 ms-2" role="alert">
+                                Server Status:
+                                <medium class="fw-bold text-danger" id="serverStatus">Off</medium>
+                            </div>
                         </div>
 
                         <div class="input-group mb-3">
@@ -166,6 +175,40 @@
                         Hello, world! This is a toast message.
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="serverCreatorModal" tabindex="-1" aria-labelledby="serverCreatorModal" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Server Creator</h5>
+                    <small class="text-danger ms-2">(Beta)</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="card-header">
+                        Spigot Server Files
+                    </ul>
+
+                    <div class="d-flex flex-column bg-light rounded mb-3 p-2 overflow-auto" id="serverCreator-spigotDownloads">
+
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="serverCreator-NameText">Server Name</span>
+                        <input type="text" class="form-control" placeholder="Server name..." id="serverCreator-NameInputBox" aria-describedby="serverCreator-NameText" value="">
+                    </div>
+
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="serverCreator-ProgressBar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="serverCreatorModal-CreateButton">Create</button>
                 </div>
             </div>
         </div>

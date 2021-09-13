@@ -24,8 +24,6 @@ function createWindow() {
     })
 }
 
-
-
 app.whenReady().then(() => {
     app.allowRendererProcessReuse = false
 

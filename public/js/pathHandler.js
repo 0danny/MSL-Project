@@ -1,8 +1,9 @@
 const path = require('path')
+const remote = require('electron').remote
 
 class PathHandler {
     constructor() {
-        this.debugMode = false
+        this.debugMode = true
 
         this.currentPath = this.debugMode ? 'servers' : `${path.dirname(remote.app.getPath("exe"))}/servers`
         this.currentServerName = null
@@ -18,7 +19,7 @@ class PathHandler {
     }
 
     getServerFilePath() {
-        return `${this.currentPath}/${this.currentServerName}/${this.serverFileName}`
+        return this.debugMode ? path.resolve(__dirname, `../../servers/${this.currentServerName}/${this.serverFileName}`) : `${this.currentPath}/${this.currentServerName}/${this.serverFileName}`
     }
 }
 
