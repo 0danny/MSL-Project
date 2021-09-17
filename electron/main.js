@@ -6,6 +6,7 @@ function createWindow() {
         width: 1240,
         height: 850,
         resizable: false,
+        frame: false,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,

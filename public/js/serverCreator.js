@@ -7,14 +7,15 @@ const { sendToast } = require('js/helper');
 const { writeSettings, addServerData } = require('js/settingsParser')
 const { refreshServers } = require('js/serverHandler')
 
-var spigotVersions = []
+function clearCreatorModal() {
+    $('#serverCreator-NameInputBox').val('')
+    $('#serverCreator-ProgressBar').css('width', '0%')
+}
 
 function initServerCreator() {
     scrapeSpigot()
 
     $('#serverCreatorModal-CreateButton').on('click', async function() {
-
-
         var serverName = $('#serverCreator-NameInputBox').val()
 
         resolveLink($('input[name="serverCreator-Radios"]:checked').val()).then(async function(url) {
@@ -35,6 +36,10 @@ function initServerCreator() {
                 $('#serverCreatorModal').modal('hide')
             }).catch(err => console.log("Error downloading file: ", err))
         }).catch(err => console.log("Error resolving the link: ", err))
+    })
+
+    $('#serverCreatorModal').on('hidden.bs.modal', function(e) {
+        clearCreatorModal()
     })
 }
 
@@ -94,8 +99,6 @@ async function scrapeSpigot() {
                     <input class="form-check-input ms-auto" name="serverCreator-Radios" type="radio" id="serverCreator-Radio-${obby.version}" value="${obby.link}">
                     </div>
                 </li>`)
-
-                spigotVersions.push(obby)
             }
         })
         .catch(function(error) {

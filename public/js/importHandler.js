@@ -8,6 +8,13 @@ const { writeSettings, addServerData } = require('js/settingsParser')
 const { refreshServers } = require('js/serverHandler')
 const path = require('path')
 
+function clearImportModal() {
+    $('#serverInput-pathInputBox').val('')
+    $('#serverInput-NameInputBox').val('')
+    $('#serverInput-JARFiles').html('')
+    $('serverInput-ProgressBar').css('width', '0%')
+}
+
 function initImportHandler() {
     $('#serverImport-pathDialogButton').on('click', async function() {
         var dg = await dialog.showOpenDialog({
@@ -37,6 +44,12 @@ function initImportHandler() {
             $('#serverInput-NameInputBox').val()
         )
     })
+
+    $('#serverCreatorModal').on('hidden.bs.modal', function(e) {
+        console.log("Closing")
+
+        clearImportModal()
+    })
 }
 
 function importServer(serverFolderPath, serverFileName, serverName) {
@@ -49,10 +62,12 @@ function importServer(serverFolderPath, serverFileName, serverName) {
 
             console.log(`Copying from ${serverFolderPath} to ${pathHandlerObj.currentPath}`)
 
-            $('#serverInput-ProgressBar').css('aria-valuemax', files.length)
-
             fse.copy(serverFolderPath, `${pathHandlerObj.currentPath}/${serverName}`, {
                     filter: function(src, dest) {
+
+                        //----------------------------------------------------
+                        // This is a very hacky and probably slow solution to making a progress bar, since fs-extra
+                        // doesn't actually expose any callbacks or variables for statistics regarding copy progress
                         progress++
 
                         var percentage = 0
@@ -62,8 +77,9 @@ function importServer(serverFolderPath, serverFileName, serverName) {
                         } else if (progress >= files.length) {
                             percentage = 100
                         }
+                        //----------------------------------------------------
 
-                        $('#serverInput-ProgressBar').css('width', percentage + '%').attr('aria-valuenow', progress);
+                        $('#serverInput-ProgressBar').css('width', `${progress}%`)
 
                         console.log(`Progress: ${progress}/${files.length}`)
 
@@ -79,6 +95,7 @@ function importServer(serverFolderPath, serverFileName, serverName) {
                     sendToast(`Server has been imported as: <b>${serverName}</b>.`)
 
                     $('#serverImportModal').modal('hide')
+                    clearImportModal()
                 })
                 .catch(err => console.log("There was an error importing the server: ", err))
         })

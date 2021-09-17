@@ -1,13 +1,16 @@
 const fs = require('fs')
-const { sendToast } = require('js/helper.js')
+const { sendToast, toggleCSS, getCurrentTheme } = require('js/helper.js')
 const pathHandlerObj = require('js/pathHandler')
 
 var settingsPath = 'settings.json'
 
-var settingsObject = [
-    { name: 'Server Data', serverData: [] },
-    { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' }
-]
+var settingsObject = {
+    serverData: [],
+    themeData: 'dark',
+    settingsData: [
+        { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' }
+    ]
+}
 
 function readSettings() {
     sendToast("Reading settings...")
@@ -33,15 +36,13 @@ function readSettings() {
 }
 
 function loopData(callback) {
-    settingsObject.forEach(function(setting) {
-        if (setting.target != undefined) {
-            callback(setting)
-        }
+    settingsObject.settingsData.forEach(function(setting) {
+        callback(setting)
     })
 }
 
 function addServerData(object) {
-    settingsObject[0].serverData.push(object)
+    settingsObject.serverData.push(object)
 }
 
 function applySettings() {
@@ -52,6 +53,8 @@ function applySettings() {
                 break;
         }
     })
+
+    toggleCSS(settingsObject.themeData)
 }
 
 function writeSettings() {
@@ -65,6 +68,10 @@ function writeSettings() {
         }
     })
 
+    console.log(`Theme before write: ${getCurrentTheme()}`)
+
+    settingsObject.themeData = getCurrentTheme()
+
     console.log('Before Write: ', settingsObject)
 
     try {
@@ -75,7 +82,7 @@ function writeSettings() {
 }
 
 function getServerData(name) {
-    var array = settingsObject[0].serverData.filter(element => element.serverName == name)
+    var array = settingsObject.serverData.filter(element => element.serverName == name)
 
     if (array.length <= 0) {
         throw err

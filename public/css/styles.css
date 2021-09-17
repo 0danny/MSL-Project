@@ -25,7 +25,11 @@ body {
 }
 
 #pluginsBox {
-    height: 500px;
+    height: 450px;
+}
+
+#plugin-downloader-box {
+    height: 450px;
 }
 
 #playersBox {
@@ -42,6 +46,37 @@ body {
 
 #serverCreator-spigotDownloads {
     height: 250px;
+}
+
+#control-bar-container {
+    -webkit-app-region: drag;
+}
+
+#control-bar-controls {
+    -webkit-app-region: no-drag;
+}
+
+#minimizeButton,
+#exitButton {
+    position: fixed;
+    transition: 0.2s all;
+    -webkit-app-region: no-drag;
+    cursor: pointer;
+}
+
+#minimizeButton {
+    top: -8px;
+    right: 50px;
+}
+
+#exitButton {
+    top: -9px;
+    right: 13px;
+}
+
+#exitButton:hover,
+#minimizeButton:hover {
+    color: white !important;
 }
 
 

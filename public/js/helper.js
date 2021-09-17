@@ -19,4 +19,49 @@ async function getFiles(dir) {
     return Array.prototype.concat(...files);
 }
 
-module.exports = { sendToast, getFiles }
+var currentTheme = 'light'
+
+function toggleCSS(mode) {
+    const toggleDark = () => {
+        $('body').addClass('bg-dark')
+        $('#main-container').addClass('bg-dark')
+        $('html').removeClass('light').addClass('dark')
+    }
+
+    const toggleLight = () => {
+        $('body').removeClass('bg-dark')
+        $('#main-container').removeClass('bg-dark')
+        $('html').removeClass('dark').addClass('light')
+    }
+
+    if (mode != undefined) {
+        switch (mode) {
+            case 'dark':
+                toggleDark()
+                break
+            case 'light':
+                toggleLight()
+                break
+        }
+        currentTheme = mode
+    } else {
+        switch (currentTheme) {
+            case 'light':
+                toggleDark()
+                currentTheme = 'dark'
+                break
+            case 'dark':
+                toggleLight()
+                currentTheme = 'light'
+                break;
+        }
+    }
+
+    console.log("Current Mode: ", currentTheme)
+}
+
+function getCurrentTheme() {
+    return currentTheme
+}
+
+module.exports = { sendToast, getFiles, toggleCSS, getCurrentTheme }
