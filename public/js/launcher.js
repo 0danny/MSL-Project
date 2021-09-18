@@ -13,6 +13,9 @@ var currentWindow = require('electron').remote.getCurrentWindow()
 $(function() {
     console.log("[MSL] Project has begun Initialization: ", pathHandlerObj.getWorkingDirectory())
 
+    //Read MSL Settings
+    readSettings()
+
     //Display current MSL Version
     fetchVersion()
 
@@ -20,9 +23,6 @@ $(function() {
     initImportHandler()
     initServerHandler()
     initServerCreator()
-
-    //Read MSL Settings
-    readSettings()
 
     $('#toggleThemeButton').on('click', function() {
         toggleCSS()

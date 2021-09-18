@@ -11,7 +11,6 @@ const child_process = require('child_process')
 
 var propertiesObject = []
 var players = []
-var levelName = null
 var currentProcess = null
 
 function initServerHandler() {
@@ -33,9 +32,14 @@ function initServerHandler() {
 
         pathHandlerObj.serverFileName = getServerData(pathHandlerObj.currentServerName).serverFileName
 
+        $('#playersBox').html('')
+        $('#playersConnected').html(`<b>0</b> Players Connected`)
+        players = []
+
         findVersion()
-        readProperties()
-        searchPlugins()
+        readProperties().then(() => {
+            searchPlugins()
+        })
     })
 
     //TODO: Needs refactoring / pisses me off looking at this
@@ -194,7 +198,7 @@ function handleConsoleOutput(data, type) {
 }
 
 function safelyForceQuit() {
-    sendToast("Force quitting server...")
+    sendToast("Attempting to force quit server...")
     writeSettings()
 
     if (currentProcess != null) {
@@ -207,45 +211,95 @@ function safelyForceQuit() {
     }
 }
 
+class playerManager {
+
+    constructor(playerName, status, coordinates, networkAddress, loginTime) {
+        this.playerName = playerName
+        this.status = status
+        this.coordinates = coordinates
+        this.networkAddress = networkAddress
+        this.loginTime = loginTime
+    }
+
+    updatePlayer() {
+        $(`#${this.playerName}-playerobject-status`)
+            .text(this.status)
+            .removeClass('text-success')
+            .removeClass('text-danger')
+            .addClass(`text-${this.returnColor()}`)
+    }
+
+    returnColor() {
+        var color = 'danger'
+
+        switch (this.status) {
+            case 'Online':
+                color = 'success'
+                break
+            case 'Offline':
+                color = 'danger'
+                break
+        }
+
+        return color
+    }
+
+    returnTemplate() {
+        return `<li class="list-group-item shadow-sm d-flex flex-column" id="${this.playerName}-playerobject">
+            <div class="d-flex flex-row align-items-center">
+                <medium><b>${this.playerName}</b></medium>
+                <div class="fs-5 ms-auto text-${this.returnColor()}" id="${this.playerName}-playerobject-status">${this.status}</div>
+            </div>
+            <small>Last saved coordinates: <font color="red" id="${this.playerName}-playerobject-coords">(${this.coordinates})</font></small>
+            <small>IP Address & Port: <font color="orange" id="${this.playerName}-playerobject-ip">${this.networkAddress.IP} | ${this.networkAddress.PORT}</font></small>
+            <small>Logged in at: <font color="green" id="${this.playerName}-playerobject-time">${this.loginTime}</font></small>
+
+            <div class="d-flex flex-row pt-2">
+                <button class="btn btn-danger w-100 me-1" type="button" id="banButton" playerName="${this.playerName}">Ban</button>
+                <button class="btn btn-warning w-100 me-1" type="button" id="kickButton" playerName="${this.playerName}">Kick</button>
+                <button class="btn btn-success w-100 me-1" type="button" id="giveOPButton" playerName="${this.playerName}">Give OP</button>
+                <button class="btn btn-danger w-100" type="button" id="removeOPButton" playerName="${this.playerName}">Remove OP</button>
+            </div>
+        </li>`
+    }
+}
+
 function parsePlayer(data) {
+
     if (data.includes('left the game')) {
         var match = /^\[(.*?)\]\s\[(.*?)\]:\s(.*?)\sleft the game/g.exec(data.trim())
 
-        if (players.includes(match[3])) {
-            sendToast(`${match[3]} has left the game.`)
+        var playerObject = players[players.findIndex(i => i.playerName === match[3])]
 
-            $(`#${match[3]}-playerobject`).remove()
-            players.splice(players.indexOf(match[3]), 1)
-        }
+        sendToast(`${playerObject.playerName} has left the game.`)
+
+        playerObject.status = 'Offline'
+        playerObject.updatePlayer()
+
     } else {
 
         var match = /^\[(.*?)\]\s(.+?):\s(.*?)\[(.*?)\] logged in with entity id (.*?) at \((.*?)\)/g.exec(data.trim())
 
         var IPSplit = match[4].split(':')
 
-        $('#playersBox').append(`<li class="list-group-item shadow-sm d-flex flex-column" id="${match[3]}-playerobject">
-            <div class="d-flex flex-row align-items-center">
-                <medium><b>${match[3]}</b></medium>
-                <div class="fs-5 ms-auto text-primary">${match[5]}</div>
-            </div>
-            <small>Last saved coordinates: <font color="red">(${match[6]})</font></small>
-            <small>IP Address & Port: <font color="orange">${IPSplit[0].slice(1)} | ${IPSplit[1]}</font></small>
-            <small>Logged in at: <font color="green">${match[1]}</font></small>
+        var playerSearch = players[players.findIndex(i => i.playerName === match[3])]
 
-            <div class="d-flex flex-row pt-2">
-                <button class="btn btn-danger w-100 me-1" type="button" id="banButton" playerName="${match[3]}">Ban</button>
-                <button class="btn btn-warning w-100 me-1" type="button" id="kickButton" playerName="${match[3]}">Kick</button>
-                <button class="btn btn-success w-100 me-1" type="button" id="giveOPButton" playerName="${match[3]}">Give OP</button>
-                <button class="btn btn-danger w-100" type="button" id="removeOPButton" playerName="${match[3]}">Remove OP</button>
-            </div>
-        </li>`)
+        if (playerSearch != undefined) {
+            playerSearch.status = 'Online'
+            playerSearch.updatePlayer()
 
-        sendToast("A new player joined: " + match[3])
+        } else {
+            var playerObject = new playerManager(match[3], 'Online', match[6], { IP: IPSplit[0].slice(1), PORT: IPSplit[1] }, match[1])
 
-        players.push(match[3])
+            sendToast(`Player connected <b>${playerObject.playerName}</b>`)
+
+            players.push(playerObject)
+
+            $('#playersBox').append(playerObject.returnTemplate())
+        }
     }
 
-    $('#playersConnected').html(`<b>${players.length}</b> Players Connected`)
+    $('#playersConnected').html(`<b>${players.filter(element => element.status === 'Online').length}</b> Players Connected`)
 }
 
 function sendMessage(msg) {
@@ -402,39 +456,36 @@ async function searchPlugins() {
 }
 
 function readProperties() {
-
-    if (!fs.existsSync(`${pathHandlerObj.getServerPath()}/server.properties`)) {
-        return
-    }
-
-    propertiesObject = []
-    levelName = ''
-    $('#serverPropertiesBox').html('')
-
-    var lineReader = readline.createInterface({
-        input: fs.createReadStream(`${pathHandlerObj.getServerPath()}/server.properties`)
-    })
-
-    lineReader.on('line', function(line) {
-        if (line.charAt(0) != "#" && line) {
-            var lineSplit = line.split('=')
-
-            $('#serverPropertiesBox').append(`<div class="input-group mt-3">
-            <span class="input-group-text" id="${lineSplit[0]}">${lineSplit[0]}</span>
-            <input type="text" class="form-control" id="${lineSplit[0]}-inputBox" aria-describedby="${lineSplit[0]}" value="${lineSplit[1]}">
-            </div>`)
-
-            if (lineSplit[0] == 'level-name') {
-                levelName = lineSplit[1]
-                console.log(`Found level name: ${levelName}.`)
-            }
-
-            propertiesObject.push({ id: lineSplit[0], value: lineSplit[1] })
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(`${pathHandlerObj.getServerPath()}/server.properties`)) {
+            reject('Properties does not exist.')
+            return
         }
-    })
 
-    lineReader.on('close', () => {
-        sendToast("Finished reading the config.")
+        propertiesObject = []
+        $('#serverPropertiesBox').html('')
+
+        var lineReader = readline.createInterface({
+            input: fs.createReadStream(`${pathHandlerObj.getServerPath()}/server.properties`)
+        })
+
+        lineReader.on('line', function(line) {
+            if (line.charAt(0) != "#" && line) {
+                var lineSplit = line.split('=')
+
+                $('#serverPropertiesBox').append(`<div class="input-group mt-3">
+                <span class="input-group-text" id="${lineSplit[0]}">${lineSplit[0]}</span>
+                <input type="text" class="form-control" id="${lineSplit[0]}-inputBox" aria-describedby="${lineSplit[0]}" value="${lineSplit[1]}">
+                </div>`)
+
+                propertiesObject.push({ id: lineSplit[0], value: lineSplit[1] })
+            }
+        })
+
+        lineReader.on('close', () => {
+            sendToast("Finished reading the config.")
+            resolve()
+        })
     })
 }
 
