@@ -1,5 +1,6 @@
 const { resolve } = require('path');
-const { readdir } = require('fs').promises;
+const { readdir } = require('fs').promises
+const jsDownloader = require('nodejs-file-downloader')
 
 function sendToast(text) {
     var toastLive = document.getElementById('liveToast')
@@ -60,8 +61,31 @@ function toggleCSS(mode) {
     console.log("Current Mode: ", currentTheme)
 }
 
+
+async function downloadFile(path, fileName, url, progress) {
+    return new Promise(async(resolve, reject) => {
+        const downloader = new jsDownloader({
+            url: url,
+            fileName: fileName,
+            directory: path,
+            onProgress: function(percentage, chunk, remainingSize) {
+                progress(percentage)
+            }
+        })
+
+        try {
+            await downloader.download();
+
+            resolve()
+        } catch (error) {
+            console.log('Error downloading the file...', error)
+            reject(error)
+        }
+    })
+}
+
 function getCurrentTheme() {
     return currentTheme
 }
 
-module.exports = { sendToast, getFiles, toggleCSS, getCurrentTheme }
+module.exports = { sendToast, getFiles, toggleCSS, getCurrentTheme, downloadFile }

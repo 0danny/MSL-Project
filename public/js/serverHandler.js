@@ -4,10 +4,11 @@ const readline = require('readline')
 const dateFormat = require('dateformat')
 const archive = require('ls-archive')
 const { ipcRenderer } = require('electron')
-const { sendToast } = require('js/helper')
+const { sendToast, downloadFile } = require('js/helper')
 const pathHandlerObj = require('./pathHandler')
 const { getServerData } = require('js/settingsParser')
 const child_process = require('child_process')
+const axios = require('axios');
 
 var propertiesObject = []
 var players = []
@@ -26,20 +27,24 @@ function initServerHandler() {
                 return
         }
 
-        $('#currentServerText').text($(this).attr('serverName'))
+        if (!currentProcess) {
+            $('#currentServerText').text($(this).attr('serverName'))
 
-        pathHandlerObj.currentServerName = $(this).attr('serverName')
+            pathHandlerObj.currentServerName = $(this).attr('serverName')
 
-        pathHandlerObj.serverFileName = getServerData(pathHandlerObj.currentServerName).serverFileName
+            pathHandlerObj.serverFileName = getServerData(pathHandlerObj.currentServerName).serverFileName
 
-        $('#playersBox').html('')
-        $('#playersConnected').html(`<b>0</b> Players Connected`)
-        players = []
+            $('#playersBox').html('')
+            $('#playersConnected').html(`<b>0</b> Players Connected`)
+            players = []
 
-        findVersion()
-        readProperties().then(() => {
-            searchPlugins()
-        })
+            findVersion()
+            readProperties().then(() => {
+                searchPlugins()
+            })
+        } else {
+            sendToast('Cannot change servers while one is running.')
+        }
     })
 
     //TODO: Needs refactoring / pisses me off looking at this
@@ -102,16 +107,45 @@ function initServerHandler() {
     })
 
     $('#startServerButton').on('click', function() {
-        if ($('#startServerButton').text() == "Stop Server") {
-            sendMessage('stop')
+        if (currentProcess) {
+            if ($('#startServerButton').text() == "Stop Server") {
+                sendMessage('stop')
 
-            preCloseClean()
+                preCloseClean()
 
-            $('#startServerButton').text('Start Server')
+                $('#startServerButton').text('Start Server')
+            } else {
+                startServer({ RAM: $('#ram-inputBox').val(), PERM: $('#permSize-inputBox').val() })
+
+                $('#startServerButton').text('Stop Server')
+            }
         } else {
-            startServer({ RAM: $('#ram-inputBox').val(), PERM: $('#permSize-inputBox').val() })
+            sendToast('No server is selected.')
+        }
+    })
 
-            $('#startServerButton').text('Stop Server')
+    $('#plugin-downloader-installbutton').on('click', function() {
+        if (pathHandlerObj.getServerPath() != undefined) {
+
+            var checkedBoxes = $('input[id="plugin-downloader-check"]:checked')
+
+            var progressValue = 0
+
+            $.each(checkedBoxes, async function() {
+                await downloadFile(`${pathHandlerObj.getServerPath()}/plugins`, '', $(this).val().toString(), function(progress) {}).then(function() {
+                    progressValue += 1
+
+                    console.log(`{${progressValue}} [Plugin Downloader]: File has been downloaded.`)
+
+                    $('#plugin-downloader-progressbar').css('width', `${(progressValue / checkedBoxes.length) * 100}%`)
+
+                    if (progressValue == checkedBoxes.length) {
+                        $('#plugin-downloader-progressbar').css('width', `0%`)
+                        sendToast(`<b>${checkedBoxes.length}</b> plugins have been downloaded and installed.`)
+                        searchPlugins()
+                    }
+                }).catch(err => console.log("Error downloading file: ", err))
+            })
         }
     })
 
@@ -119,7 +153,27 @@ function initServerHandler() {
         safelyForceQuit()
     })
 
+    initPluginDownloader()
     refreshServers()
+}
+
+function initPluginDownloader() {
+
+    axios.get('https://api.github.com/repos/EssentialsX/Essentials/releases')
+        .then(function(response) {
+
+            response.data[0].assets.forEach(function(element) {
+                $('#plugin-downloader-accordion').append(`<li class="list-group-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${element.browser_download_url}" id="plugin-downloader-check">
+                        <label class="form-check-label" for="plugin-downloader-check">${path.parse(element.name).name}</label>
+                    </div>
+                </li>`)
+            })
+        })
+        .catch(function(error) {
+            console.log(error);
+        })
 }
 
 async function startServer(data) {
@@ -206,8 +260,9 @@ function safelyForceQuit() {
         $('#messageInput').val('')
         $('#pills-normal').html('')
         $('#pills-error').html('')
-        currentProcess.stdin.end();
+        currentProcess.stdin.end()
         currentProcess.kill()
+        $('#startServerButton').text('Start Server')
     }
 }
 
@@ -394,13 +449,14 @@ async function searchPlugins() {
 
         files = files.filter(element => element.includes('.jar') || element.includes('.zip'))
 
+        /*
         if (files == undefined || files.length <= 0) {
             $('#pills-plugins-tab').parent().css('display', 'none')
             console.log("No plugins installed.")
             return
         } else {
             $('#pills-plugins-tab').parent().css('display', 'block')
-        }
+        }*/
 
         files.forEach(async function(file) {
 

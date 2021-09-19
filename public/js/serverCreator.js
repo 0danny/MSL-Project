@@ -1,9 +1,8 @@
 const axios = require('axios');
 const fs = require('fs');
 const cheerio = require('cheerio');
-const jsDownloader = require('nodejs-file-downloader');
 const pathHandlerObj = require('js/pathHandler');
-const { sendToast } = require('js/helper');
+const { sendToast, downloadFile } = require('js/helper');
 const { writeSettings, addServerData } = require('js/settingsParser')
 const { refreshServers } = require('js/serverHandler')
 
@@ -17,6 +16,11 @@ function initServerCreator() {
 
     $('#serverCreatorModal-CreateButton').on('click', async function() {
         var serverName = $('#serverCreator-NameInputBox').val()
+
+        if (fs.existsSync(`${pathHandlerObj.currentPath}/${serverName}`)) {
+            sendToast(`Server ${serverName} already exists.`)
+            return
+        }
 
         resolveLink($('input[name="serverCreator-Radios"]:checked').val()).then(async function(url) {
             downloadFile(`${pathHandlerObj.currentPath}/${serverName}`, 'spigot.jar', url, function(progress) {
@@ -49,28 +53,6 @@ function writeEula(serverName) {
     } catch (err) {
         sendToast("Failed to write EULA.")
     }
-}
-
-async function downloadFile(path, fileName, url, progress) {
-    return new Promise(async(resolve, reject) => {
-        const downloader = new jsDownloader({
-            url: url,
-            fileName: fileName,
-            directory: path,
-            onProgress: function(percentage, chunk, remainingSize) {
-                progress(percentage)
-            }
-        })
-
-        try {
-            await downloader.download();
-
-            resolve()
-        } catch (error) {
-            console.log('Error downloading the file...', error)
-            reject(error)
-        }
-    })
 }
 
 async function scrapeSpigot() {

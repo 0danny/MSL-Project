@@ -161,16 +161,21 @@
                                 <div class="accordion-item">
                                     <h2 class="accordion-header" id="headingOne">
                                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                        Essentials Pack
+                                        Essentials Pack | Latest
                                       </button>
                                     </h2>
                                     <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                                        <div class="accordion-body">
-
+                                        <div class="accordion-body" id="plugin-downloader-accordion">
+                                            <button type="button" class="btn btn-primary mb-2 w-100" id="plugin-downloader-installbutton">Install</button>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
+                            <div class="progress mt-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="plugin-downloader-progressbar" role="progressbar" style="width: 0%"></div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -194,7 +199,7 @@
             </div>
         </div>
     </div>
-    <div class="position-fixed top-0 end-0 p-3 mt-5" style="z-index: 11">
+    <div class="position-fixed top-0 end-0 p-3 mt-5" style="z-index: 99999">
         <div class="toast-container">
             <div class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true" id="liveToast">
                 <div class="d-flex">

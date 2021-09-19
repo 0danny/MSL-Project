@@ -54,6 +54,11 @@ function initImportHandler() {
 
 function importServer(serverFolderPath, serverFileName, serverName) {
 
+    if (fse.existsSync(`${pathHandlerObj.currentPath}/${serverName}`)) {
+        sendToast(`Server ${serverName} already exists.`)
+        return
+    }
+
     console.log(`Importing with settings: `, { folderPath: serverFolderPath, fileName: serverFileName, serverName: serverName })
 
     getFiles(serverFolderPath)
