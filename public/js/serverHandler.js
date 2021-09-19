@@ -107,7 +107,7 @@ function initServerHandler() {
     })
 
     $('#startServerButton').on('click', function() {
-        if (currentProcess) {
+        if (pathHandlerObj.currentServerName != null) {
             if ($('#startServerButton').text() == "Stop Server") {
                 sendMessage('stop')
 
@@ -125,7 +125,7 @@ function initServerHandler() {
     })
 
     $('#plugin-downloader-installbutton').on('click', function() {
-        if (pathHandlerObj.getServerPath() != undefined) {
+        if (pathHandlerObj.currentServerName != null) {
 
             var checkedBoxes = $('input[id="plugin-downloader-check"]:checked')
 
@@ -222,6 +222,8 @@ async function startServer(data) {
 
         $('#pills-normal').html('')
         $('#pills-error').html('')
+
+        preCloseClean()
     })
 }
 
@@ -364,7 +366,12 @@ function sendMessage(msg) {
 }
 
 function preCloseClean() {
-    currentProcess.stdin.end();
+    try {
+        currentProcess.stdin.end()
+        currentProcess = null
+    } catch (err) {
+        console.log('[Process] Error during clean: ', err)
+    }
 }
 
 function refreshServers() {
