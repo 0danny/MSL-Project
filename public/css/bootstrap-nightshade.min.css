@@ -13480,6 +13480,10 @@ html.dark label {
     color: #738ca5!important
 }
 
+html.dark .control-bar-container {
+    background-color: #1C2024!important;
+}
+
 .light-blue {
     color: #738ca5!important
 }

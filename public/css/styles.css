@@ -36,6 +36,10 @@ body {
     height: 450px;
 }
 
+#v-pills-tab {
+    height: 450px;
+}
+
 #pills-normal {
     height: 200px;
 }

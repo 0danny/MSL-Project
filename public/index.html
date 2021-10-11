@@ -22,7 +22,7 @@
 
 <body>
 
-    <div class="h-10 d-flex flex-row align-items-center justify-content-center" style="background-color: #1C2024!important;" id="control-bar-container">
+    <div class="h-10 d-flex flex-row align-items-center justify-content-center" style="background-color: #1111!important;" id="control-bar-container">
         <div class="light-blue p-2">Minecraft Server Launcher</div>
         <div class="controls ms-auto d-flex flex-row p-3" id="control-bar-controls">
             <div class="light-blue fs-2" id="minimizeButton">⎯</div>
@@ -47,10 +47,11 @@
                 <li class="nav-item">
                     <button class="nav-link" id="pills-players-tab" data-bs-toggle="pill" data-bs-target="#pills-players" type="button" role="tab" aria-controls="pills-plugins" aria-selected="true">Players</button>
                 </li>
-
+                <li class="nav-item">
+                    <button class="nav-link" id="pills-settings-tab" data-bs-toggle="pill" data-bs-target="#pills-settings" type="button" role="tab" aria-controls="pills-settings" aria-selected="true">Settings</button>
+                </li>
 
                 <div class="side-buttons-container ms-auto d-flex flex-row">
-                    <button class="btn btn-primary ms-auto me-2 fw-bold" type="button" id="toggleThemeButton">Toggle Theme</button>
                     <div class="dropdown">
                         <button class="btn btn-primary dropdown-toggle" type="button" id="serverPicker" data-bs-toggle="dropdown" aria-expanded="false">                        
                             <div class="d-flex flex-row">
@@ -106,6 +107,11 @@
                             <input type="text" class="form-control" id="ram-inputBox" aria-describedby="ram-addon" value="2">
                             <span class="input-group-text" id="permSize-addon">Perm (MB)</span>
                             <input type="text" class="form-control" id="permSize-inputBox" aria-describedby="permSize-addon" value="128">
+                            <span class="input-group-text">
+                                <div class="form-check form-switch d-flex align-items-center justify-content-center">
+                                    <input class="form-check-input" type="checkbox" id="usePermSize">
+                                </div>
+                            </span>
                         </div>
                         <h5 class="card-title light-blue">Minecraft Server Output</h5>
 
@@ -141,9 +147,47 @@
                         <ul class="rounded-bottom overflow-auto p-1 border border-top-0" id="serverPropertiesBox">
 
                         </ul>
-                        <button class="w-100 btn btn-info mt-3" type="button" id="savePropertiesButton">Save Config</button>
+                        <div class="input-group">
+                            <button class="btn btn-info w-50" type="button" id="savePropertiesButton">Save Config</button>
+                            <span class="input-group-text" id="server-ip">Server IP Address</span>
+                            <input type="text" class="form-control" id="server-ip-inputBox" aria-describedby="server-ip" value="" placeholder="IP Address for joining..." disabled>
+                            <button class="btn btn-info" type="button" id="server-ip-show-hide">Hide</button>
+                        </div>
                     </div>
                 </div>
+
+                <div class="tab-pane fade" id="pills-settings" role="tabpanel" aria-labelledby="pills-settings-tab">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start">
+                            <div class="nav flex-column nav-pills me-5 pe-3 border-end" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                                <button class="nav-link active" id="v-pills-serversettings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-serversettings" type="button" role="tab" aria-controls="v-pills-serversettings" aria-selected="true">Server Settings</button>
+                                <button class="nav-link" id="v-pills-appearance-tab" data-bs-toggle="pill" data-bs-target="#v-pills-appearance" type="button" role="tab" aria-controls="v-pills-appearance" aria-selected="false">Appearance</button>
+                                <button class="nav-link" id="v-pills-networkManager-tab" data-bs-toggle="pill" data-bs-target="#v-pills-networkManager" type="button" role="tab" aria-controls="v-pills-networkManager" aria-selected="false">Network Manager</button>
+                            </div>
+                            <div class="tab-content" id="v-pills-tabContent">
+                                <div class="tab-pane fade show active" id="v-pills-serversettings" role="tabpanel" aria-labelledby="v-pills-serversettings-tab">
+                                    <div class="input-group">
+                                        <span class="input-group-text" id="settings-JavaInstallation">Java Installation</span>
+                                        <input type="text" class="form-control" placeholder="Java installation..." aria-label="Java installation..." id="settings-JavaInstallation" value="Default Path">
+                                    </div>
+                                    <div class="alert alert-info w-100 mt-2" role="alert">
+                                        <b>TIP: </b>If the server completely stops upon launch, it may because of a broken java path.
+                                    </div>
+                                    <button class="btn btn-primary ms-auto me-2 w-100" type="button" id="settings-forceSaveButton">Force Save</button>
+                                </div>
+
+                                <div class="tab-pane fade" id="v-pills-appearance" role="tabpanel" aria-labelledby="v-pills-appearance-tab">
+                                    <button class="btn btn-info ms-auto me-2 fw-bold" type="button" id="toggleThemeButton">Toggle Theme</button>
+                                </div>
+
+                                <div class="tab-pane fade" id="v-pills-networkManager" role="tabpanel" aria-labelledby="v-pills-networkManager-tab">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div class="tab-pane fade" id="pills-plugins" role="tabpanel" aria-labelledby="pills-plugins-tab">
                     <div class="card-body d-flex flex-row">
@@ -169,13 +213,11 @@
                                             <button type="button" class="btn btn-primary mb-2 w-100" id="plugin-downloader-installbutton">Install</button>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                             <div class="progress mt-2">
                                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="plugin-downloader-progressbar" role="progressbar" style="width: 0%"></div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -191,9 +233,6 @@
                         </div>
                         <ul class="overflow-auto p-1 rounded-bottom border border-top-0" id="playersBox">
                         </ul>
-                        <!--
-<div class="card-header display-6 text-center mt-5 rounded-top">Player Controls</div>
-                        -->
                     </div>
                 </div>
             </div>

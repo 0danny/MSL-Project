@@ -13,6 +13,7 @@ const axios = require('axios');
 var propertiesObject = []
 var players = []
 var currentProcess = null
+var currentServerAddress = null
 
 function initServerHandler() {
     $(document).on('click', '#serverPickerButton', function() {
@@ -99,6 +100,17 @@ function initServerHandler() {
         safelyForceQuit()
     })
 
+    $('#server-ip-show-hide').on('click', function() {
+        if ($(this).text() == 'Show') {
+            $('#server-ip-inputBox').css('color', '')
+            $(this).text('Hide')
+        } else {
+            $('#server-ip-inputBox').css('color', 'transparent')
+            $(this).text('Show')
+        }
+
+    })
+
     $('#messageInput').on('keypress', function(e) {
         if (e.key === 'Enter') {
             sendMessage($('#messageInput').val())
@@ -155,6 +167,22 @@ function initServerHandler() {
 
     initPluginDownloader()
     refreshServers()
+    fetchIPAddress()
+}
+
+function fetchIPAddress() {
+
+    axios.get('http://bot.whatismyipaddress.com/')
+        .then(function(response) {
+            console.log(`Found Server IP Address: ${response.data}`)
+
+            $('#server-ip-inputBox').val(response.data)
+            currentServerAddress = response.data
+        })
+        .catch(function(error) {
+            console.log('Could not fetch IP: ', error);
+            currentServerAddress = null
+        })
 }
 
 function initPluginDownloader() {
@@ -172,7 +200,7 @@ function initPluginDownloader() {
             })
         })
         .catch(function(error) {
-            console.log(error);
+            console.log(`Error initiating plugin downloader, ${error}`);
         })
 }
 
@@ -186,6 +214,10 @@ async function startServer(data) {
         args = args.concat(JVMArguments)
     }
 
+    if ($('#usePermSize').is(':checked')) {
+        args.push(`-XX:PermSize=${$('#permSize-inputBox').val()}M`)
+    }
+
     args.push('-jar')
     args.push(pathHandlerObj.getServerFilePath())
     args.push('nogui')
@@ -195,7 +227,7 @@ async function startServer(data) {
 
     //"C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe" //Alt java version
 
-    currentProcess = child_process.spawn('java', args, { cwd: pathHandlerObj.getServerPath() })
+    currentProcess = child_process.spawn("C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe", args, { cwd: pathHandlerObj.getServerPath() })
 
     currentProcess.on('error', (error) => {
         sendToast("There was an error starting the process: " + error)
@@ -324,7 +356,7 @@ class playerManager {
 function parsePlayer(data) {
 
     if (data.includes('left the game')) {
-        var match = /^\[(.*?)\]\s\[(.*?)\]:\s(.*?)\sleft the game/g.exec(data.trim())
+        var match = /^\[(.*?)\]\s\[(.*?)\]:\s(.*?)\sleft the game/gm.exec(data.trim())
 
         var playerObject = players[players.findIndex(i => i.playerName === match[3])]
 
@@ -335,7 +367,7 @@ function parsePlayer(data) {
 
     } else {
 
-        var match = /^\[(.*?)\]\s(.+?):\s(.*?)\[(.*?)\] logged in with entity id (.*?) at \((.*?)\)/g.exec(data.trim())
+        var match = /^\[(.*?)\]\s(.+?):\s(.*?)\[(.*?)\] logged in with entity id (.*?) at \((.*?)\)/gm.exec(data.trim())
 
         var IPSplit = match[4].split(':')
 
@@ -452,6 +484,8 @@ async function searchPlugins() {
         return
     }
 
+    console.log('Looking for mods within: ', folderPath)
+
     await fs.promises.readdir(folderPath, async(err, files) => {
 
         files = files.filter(element => element.includes('.jar') || element.includes('.zip'))
@@ -487,12 +521,12 @@ async function searchPlugins() {
 
                         archive.readFile(filePath, path.normalize("mcmod.info"), function(err, manifestData) {
                             if (!err) {
-                                var json = JSON.parse(manifestData.toString())
-
                                 try {
-                                    pluginName = json[0].name
-                                    version += ` | ${json[0].version}`
-                                } catch (err) {}
+                                    pluginName = /"name".+"(.*?)"/g.exec(manifestData.toString())[1]
+                                    version += ` | ${/"version".+"(.*?)"/g.exec(manifestData.toString())[1]}`
+                                } catch (err) {
+                                    console.log({ Error: 'parsing JSON - mcmod.info', Stack: err, Data: manifestData.toString(), File: file })
+                                }
                             }
 
                             if (pathObject.ext == '.disabled') {
@@ -521,7 +555,7 @@ async function searchPlugins() {
 function readProperties() {
     return new Promise((resolve, reject) => {
         if (!fs.existsSync(`${pathHandlerObj.getServerPath()}/server.properties`)) {
-            reject('Properties does not exist.')
+            resolve()
             return
         }
 
@@ -540,6 +574,10 @@ function readProperties() {
                 <span class="input-group-text" id="${lineSplit[0]}">${lineSplit[0]}</span>
                 <input type="text" class="form-control" id="${lineSplit[0]}-inputBox" aria-describedby="${lineSplit[0]}" value="${lineSplit[1]}">
                 </div>`)
+
+                if (lineSplit[0] == 'server-port' && currentServerAddress != null) {
+                    $('#server-ip-inputBox').val(`${currentServerAddress}:${lineSplit[1]}`)
+                }
 
                 propertiesObject.push({ id: lineSplit[0], value: lineSplit[1] })
             }

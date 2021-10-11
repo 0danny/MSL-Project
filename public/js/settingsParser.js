@@ -8,7 +8,9 @@ var settingsObject = {
     serverData: [],
     themeData: 'dark',
     settingsData: [
-        { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' }
+        { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' },
+        { name: 'Use JVM Arguments', data: '', target: '#useArguments' },
+        { name: 'Allocated RAM', data: '', target: '#ram-inputBox' }
     ]
 }
 
@@ -25,13 +27,17 @@ function readSettings() {
                     sendToast("There was an error reading the settings file...")
                 }
 
-                settingsObject = JSON.parse(data)
+                jQuery.extend(true, settingsObject, JSON.parse(data)) //Modifies original instance of settingsObject
 
-                console.log("Got config file contents: ", JSON.parse(data))
+                console.log("Got config file contents: ", settingsObject)
 
                 applySettings()
             })
         }
+    })
+
+    $('#settings-forceSaveButton').on('click', function() {
+        writeSettings()
     })
 }
 
@@ -47,10 +53,13 @@ function addServerData(object) {
 
 function applySettings() {
     loopData((setting) => {
-        switch ($(setting.target).prop('nodeName')) {
-            case 'INPUT':
+        switch ($(setting.target).attr('type')) {
+            case 'text':
                 $(setting.target).val(setting.data)
-                break;
+                break
+            case 'checkbox':
+                $(setting.target).prop('checked', setting.data);
+                break
         }
     })
 
@@ -60,11 +69,16 @@ function applySettings() {
 function writeSettings() {
     console.log("Writing the settings file.")
 
+    console.log(settingsObject)
+
     loopData((setting) => {
-        switch ($(setting.target).prop('nodeName')) {
-            case 'INPUT':
+        switch ($(setting.target).attr('type')) {
+            case 'text':
                 setting.data = $(setting.target).val()
-                break;
+                break
+            case 'checkbox':
+                setting.data = $(setting.target).is(':checked')
+                break
         }
     })
 
