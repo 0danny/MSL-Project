@@ -227,7 +227,14 @@ async function startServer(data) {
 
     //"C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe" //Alt java version
 
-    currentProcess = child_process.spawn("C:\\Program Files\\Java\\jdk1.8.0_221\\bin\\java.exe", args, { cwd: pathHandlerObj.getServerPath() })
+    //Path Check
+    var inputJavaPath = $('#settings-JavaInstallation').val()
+
+    if (inputJavaPath == "" || inputJavaPath == undefined) { inputJavaPath = 'java.exe' }
+
+    console.log('Found java path: ', inputJavaPath)
+
+    currentProcess = child_process.spawn(inputJavaPath, args, { cwd: pathHandlerObj.getServerPath() })
 
     currentProcess.on('error', (error) => {
         sendToast("There was an error starting the process: " + error)

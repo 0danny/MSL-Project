@@ -10,7 +10,10 @@ var settingsObject = {
     settingsData: [
         { name: 'JVM Arguments', data: '', target: '#jvmArgumentsBox' },
         { name: 'Use JVM Arguments', data: '', target: '#useArguments' },
-        { name: 'Allocated RAM', data: '', target: '#ram-inputBox' }
+        { name: 'Allocated RAM', data: '', target: '#ram-inputBox' },
+        { name: 'Java Path', data: '', target: '#settings-JavaInstallation' },
+        { name: 'Allocated Perm', data: '', target: '#permSize-inputBox' },
+        { name: 'Use Perm', data: '', target: '#usePermSize' }
     ]
 }
 
